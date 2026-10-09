@@ -1,22 +1,11 @@
 from __future__ import annotations
 
 import json
-import math
 import sqlite3
 from pathlib import Path
 
 from fromage.models import Chunk
-
-
-def _cosine(a: list[float], b: list[float]) -> float:
-    if len(a) != len(b) or not a:
-        return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(y * y for y in b))
-    if na == 0 or nb == 0:
-        return 0.0
-    return dot / (na * nb)
+from fromage.rank import cosine
 
 
 class SQLiteMemory:
@@ -54,12 +43,6 @@ class SQLiteMemory:
         with sqlite3.connect(self._path) as conn:
             conn.execute("DELETE FROM chunks")
 
-    def all_chunks(self) -> list[tuple[str, str, str]]:
-        """Return (id, url, text) for reindex."""
-        with sqlite3.connect(self._path) as conn:
-            rows = conn.execute("SELECT id, url, text FROM chunks").fetchall()
-        return [(r[0], r[1], r[2]) for r in rows]
-
     def upsert(self, chunks: list[Chunk], vectors: list[list[float]]) -> None:
         if len(chunks) != len(vectors):
             raise ValueError("chunks and vectors length mismatch")
@@ -83,7 +66,7 @@ class SQLiteMemory:
         scored: list[tuple[Chunk, float]] = []
         for cid, url, text, model, vec_json in rows:
             vec = json.loads(vec_json)
-            score = _cosine(vector, vec)
+            score = cosine(vector, vec)
             scored.append(
                 (
                     Chunk(id=cid, url=url, text=text, embed_model=model),

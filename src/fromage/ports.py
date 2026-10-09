@@ -46,17 +46,11 @@ def build_search() -> Search:
     base = env("FROMAGE_SEARXNG_URL", "http://127.0.0.1:8888") or "http://127.0.0.1:8888"
     improve = (env("FROMAGE_IMPROVE", "1") or "1") not in ("0", "false", "False")
     semantic = (env("FROMAGE_SEMANTIC_RERANK", "1") or "1") not in ("0", "false", "False")
-    embed = None
-    if improve and semantic:
-        try:
-            embed = build_embed()
-        except Exception:
-            embed = None
     return SearXNGSearch(
         base_url=base.rstrip("/"),
         improve=improve,
-        embed=embed,
-        semantic=semantic and embed is not None,
+        embed=build_embed() if improve and semantic else None,
+        semantic=semantic,
     )
 
 

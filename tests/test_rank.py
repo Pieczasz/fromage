@@ -71,25 +71,6 @@ def test_demote_package_registry_for_conceptual_query():
     assert "prometheus.io" in ranked[0].url
 
 
-def test_demote_powerbi_embedded_for_mcu_query():
-    hits = [
-        Hit(
-            "Power BI",
-            "https://learn.microsoft.com/en-us/rest/api/power-bi/",
-            "Power BI REST APIs for embedded analytics",
-        ),
-        Hit(
-            "ARM",
-            "https://developer.arm.com/documentation/dui0552/a/the-cortex-m3-processor/exception-model/vector-table",
-            "Cortex-M3 interrupt vector table bare metal",
-        ),
-    ]
-    q = "embedded ARM Cortex-M bare metal interrupt vector table"
-    assert score_hit(hits[1], q, "code") > score_hit(hits[0], q, "code")
-    ranked = rerank(hits, q, "code", limit=2)
-    assert "arm.com" in ranked[0].url or "developer.arm.com" in ranked[0].url
-
-
 def test_semantic_boost_outranks_weak_lexical():
     hits = [
         Hit("unrelated", "https://example.com/a", "gardening tips for tomatoes"),

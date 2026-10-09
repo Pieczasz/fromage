@@ -207,7 +207,7 @@ def _tokens(text: str) -> set[str]:
 
 
 def _content_tokens(query: str) -> set[str]:
-    """Drop ultra-short tokens that cause false topical matches (e.g. 'bi' in Power BI)."""
+    """Drop ultra-short tokens, which cause false topical matches."""
     return {t for t in _tokens(query) if len(t) >= 3 or t in {"go", "c++", "c#"}}
 
 
@@ -260,12 +260,6 @@ def rewrite_queries(query: str, mode: str) -> list[str]:
     elif len(words) >= 10 and not re.search(r"\b(how|vs|versus|compare)\b", lower):
         head = " ".join(words[:8])
         out.append(f"{head} documentation")
-
-    # Ambiguous "embedded" without MCU context often retrieves analytics "embedded" pages.
-    if re.search(r"\bembedded\b", lower) and re.search(
-        r"\b(arm|cortex|mcu|rtos|freertos|bare.?metal|interrupt|firmware)\b", lower
-    ):
-        out.append(f"{q} microcontroller firmware")
 
     return _uniq(out)[:3]
 
@@ -347,12 +341,6 @@ def score_hit(hit: Hit, query: str, mode: str, *, semantic: float | None = None)
         score -= 3.0
     if host.endswith("developer.mozilla.org") and _NON_WEB_STACK.search(query):
         score -= 2.5
-    if "power-bi" in (hit.url + hit.title).lower() and re.search(
-        r"\b(arm|cortex|mcu|rtos|freertos|bare.?metal|firmware)\b", query, re.I
-    ):
-        score -= 4.0
-    if host.endswith("learn.microsoft.com") and overlap < 0.15 and (semantic or 0) < 0.35:
-        score -= 1.5
 
     if overlap < 0.08 and (semantic is None or semantic < 0.28):
         score -= 3.0
@@ -367,34 +355,19 @@ def rerank(
     limit: int,
     *,
     semantics: list[float] | None = None,
-    min_overlap: float = 0.0,
-    min_semantic: float = 0.0,
 ) -> list[Hit]:
-    if not hits:
-        return []
     if semantics is not None and len(semantics) != len(hits):
         raise ValueError("semantics length must match hits")
-
-    scored: list[tuple[int, Hit, float, float, float | None]] = []
-    for i, hit in enumerate(hits):
-        sem = semantics[i] if semantics is not None else None
-        ov = lexical_overlap(query, hit)
-        if min_overlap and ov < min_overlap and (sem is None or sem < min_semantic):
-            continue
-        scored.append((i, hit, score_hit(hit, query, mode, semantic=sem), ov, sem))
-
-    if not scored:
-        scored = [
-            (i, hit, score_hit(hit, query, mode, semantic=semantics[i] if semantics else None), 0.0, None)
-            for i, hit in enumerate(hits)
-        ]
-
+    scored = [
+        (i, hit, score_hit(hit, query, mode, semantic=semantics[i] if semantics else None))
+        for i, hit in enumerate(hits)
+    ]
     scored.sort(key=lambda row: (-row[2], row[0]))
 
     picked: list[Hit] = []
     host_counts: dict[str, int] = {}
     deferred: list[Hit] = []
-    for _, hit, _, _, _ in scored:
+    for _, hit, _ in scored:
         h = _host(hit.url)
         if host_counts.get(h, 0) >= 2:
             deferred.append(hit)
