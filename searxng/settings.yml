@@ -1,7 +1,8 @@
 use_default_settings: true
 
 server:
-  secret_key: "change-me-in-production"
+  # Fine as a fixed value: SearXNG only listens on 127.0.0.1 and has no user accounts.
+  secret_key: "fromage-local-only"
   limiter: false
 
 search:

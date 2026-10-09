@@ -1,6 +1,8 @@
+name: fromage
+
 services:
   searxng:
-    image: docker.io/searxng/searxng:latest
+    image: docker.io/searxng/searxng:2026.10.4-d48c4b555
     restart: unless-stopped
     ports:
       - "127.0.0.1:8888:8080"
@@ -22,14 +24,14 @@ services:
       start_period: 15s
 
   ollama:
-    image: docker.io/ollama/ollama:latest
+    image: docker.io/ollama/ollama:0.35.1
     restart: unless-stopped
     # Not published: only the mcp service talks to it, and a host Ollama often already owns 11434.
     volumes:
       - ollama_data:/root/.ollama
 
   ollama-init:
-    image: docker.io/ollama/ollama:latest
+    image: docker.io/ollama/ollama:0.35.1
     depends_on:
       - ollama
     restart: "no"
@@ -49,18 +51,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8765:8765"
-    environment:
-      FROMAGE_SEARXNG_URL: http://searxng:8080
-      OLLAMA_HOST: http://ollama:11434
-      FROMAGE_MEMORY: sqlite
-      FROMAGE_SQLITE_PATH: /data/memory.db
-      FROMAGE_PAGE_CACHE: /data/pages.db
-      FROMAGE_EMBED_MODEL: nomic-embed-text
-      FROMAGE_IMPROVE: "1"
-      FROMAGE_SEMANTIC_RERANK: "1"
-      FROMAGE_MODES_PATH: /app/modes.json
-      MCP_TRANSPORT: streamable-http
-      MCP_PORT: "8765"
+    # Defaults live in the Dockerfile; override any FROMAGE_* variable here under `environment:`.
     volumes:
       - mcp_data:/data
     depends_on:
@@ -74,7 +65,7 @@ services:
   # Optional vector DB: docker compose --profile vector up -d
   qdrant:
     profiles: ["vector"]
-    image: docker.io/qdrant/qdrant:latest
+    image: docker.io/qdrant/qdrant:v1.19.2
     restart: unless-stopped
     ports:
       - "127.0.0.1:6333:6333"
