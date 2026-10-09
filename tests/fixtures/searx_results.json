@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "title": "Python",
+      "url": "https://www.python.org/",
+      "content": "The official home of the Python Programming Language"
+    },
+    {
+      "title": "docs",
+      "url": "https://docs.python.org/3/",
+      "snippet": "Python documentation"
+    }
+  ]
+}

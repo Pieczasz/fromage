@@ -1,0 +1,7 @@
+{
+  "seed": "open-search-web-v2",
+  "count": 1000,
+  "train": 905,
+  "test": 95,
+  "topics": 16
+}

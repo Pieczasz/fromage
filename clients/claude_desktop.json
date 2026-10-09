@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "open-search": {
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f",
+        "COMPOSE_FILE",
+        "run",
+        "--rm",
+        "-T",
+        "--no-deps",
+        "-e",
+        "MCP_TRANSPORT=stdio",
+        "-e",
+        "OPEN_SEARCH_SEARXNG_URL=http://searxng:8080",
+        "-e",
+        "OLLAMA_HOST=http://ollama:11434",
+        "--entrypoint",
+        "python",
+        "mcp",
+        "-m",
+        "open_search.mcp_server"
+      ]
+    }
+  }
+}

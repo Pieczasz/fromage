@@ -1,0 +1,88 @@
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      SEARXNG_BASE_URL: http://127.0.0.1:8888/
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-init:
+    image: docker.io/ollama/ollama:latest
+    depends_on:
+      - ollama
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "waiting for ollama..."
+        until ollama list >/dev/null 2>&1; do sleep 1; done
+        ollama pull nomic-embed-text
+        echo "nomic-embed-text ready"
+
+  mcp:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      OPEN_SEARCH_SEARXNG_URL: http://searxng:8080
+      OLLAMA_HOST: http://ollama:11434
+      OPEN_SEARCH_MEMORY: sqlite
+      OPEN_SEARCH_SQLITE_PATH: /data/memory.db
+      OPEN_SEARCH_PAGE_CACHE: /data/pages.db
+      OPEN_SEARCH_EMBED_MODEL: nomic-embed-text
+      OPEN_SEARCH_IMPROVE: "1"
+      OPEN_SEARCH_SEMANTIC_RERANK: "1"
+      OPEN_SEARCH_MODES_PATH: /app/modes.json
+      MCP_TRANSPORT: streamable-http
+      MCP_PORT: "8765"
+    volumes:
+      - mcp_data:/data
+    depends_on:
+      searxng:
+        condition: service_started
+      ollama:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
+
+  # Optional vector DB: docker compose --profile vector up -d
+  qdrant:
+    profiles: ["vector"]
+    image: docker.io/qdrant/qdrant:latest
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  ollama_data:
+  mcp_data:
+  qdrant_data:

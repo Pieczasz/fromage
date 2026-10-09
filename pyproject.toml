@@ -1,0 +1,29 @@
+[project]
+name = "open-search"
+version = "0.1.0"
+description = "Local search lab: SearXNG discovery, page read, swappable vector memory, MCP tools"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.28",
+    "mcp>=2.3",
+    "trafilatura>=2.3",
+]
+
+[project.optional-dependencies]
+qdrant = ["qdrant-client>=1.19"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+open-search-bench = "open_search.bench:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
