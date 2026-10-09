@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 import httpx
 
 from fromage.models import Hit
@@ -31,55 +33,49 @@ class SearXNGSearch:
         self._semantic = semantic
 
     def search(self, query: str, mode: str = "general", limit: int = 8) -> list[Hit]:
-        if not self._improve:
-            return self._search_once(query, mode, limit=limit)[:limit]
-
         cfg = get_mode(mode)
-        queries = rewrite_queries(query, mode)
-        pool: list[Hit] = []
-        seen_urls: set[str] = set()
+        if not self._improve:
+            return self._search_many([(query, cfg.get("engines"))], mode, limit=limit)[:limit]
 
-        fetch_n = max(limit * 3, 15)
-        for i, q in enumerate(queries):
-            engines = engines_for_mode(mode, q, cfg.get("engines"))
-            categories = cfg["categories"]
-            if i > 0 and mode == "code":
-                categories = "general"
-                engines = engines_for_mode("code", q, "yep,duckduckgo,brave,github,stackoverflow")
-            batch = self._search_once(
-                q, mode, limit=fetch_n, categories=categories, engines=engines
-            )
-            for h in batch:
-                if h.url in seen_urls:
-                    continue
-                seen_urls.add(h.url)
-                pool.append(h)
-
-        # Prefer general web for conceptual code queries (IT category is package-heavy)
-        if mode == "code":
-            batch = self._search_once(
-                queries[0],
-                mode,
-                limit=fetch_n,
-                categories="general",
-                engines="yep,duckduckgo,brave",
-            )
-            for h in batch:
-                if h.url not in seen_urls:
-                    seen_urls.add(h.url)
-                    pool.append(h)
-
+        jobs = [(q, engines_for_mode(mode, q, cfg.get("engines"))) for q in rewrite_queries(query, mode)]
+        pool = self._search_many(jobs, mode, limit=max(limit * 3, 15))
         semantics = self._semantic_scores(query, pool) if self._semantic else None
-        # Soft gates: never drop the whole pool if upstream is sparse
-        return rerank(
-            pool,
-            query,
-            mode,
-            limit,
-            semantics=semantics,
-            min_overlap=0.0,
-            min_semantic=0.0,
-        )
+        return rerank(pool, query, mode, limit, semantics=semantics)
+
+    def _search_many(self, jobs: list[tuple[str, str | None]], mode: str, *, limit: int) -> list[Hit]:
+        """Run queries in parallel; keep whatever succeeds, fail only if every query fails."""
+        own = self._client is None
+        client = self._client or httpx.Client(timeout=15.0)
+        try:
+            with ThreadPoolExecutor(max_workers=len(jobs)) as ex:
+                futures = [
+                    ex.submit(self._search_once, q, mode, limit=limit, engines=eng, client=client)
+                    for q, eng in jobs
+                ]
+            batches, errors, failing = [], [], set()
+            for f in futures:
+                try:
+                    hits, down = f.result()
+                    batches.append(hits)
+                    failing.update(down)
+                except Exception as e:
+                    errors.append(e)
+        finally:
+            if own:
+                client.close()
+        if not batches:
+            raise errors[0]
+        pool: list[Hit] = []
+        seen: set[str] = set()
+        for batch in batches:
+            for h in batch:
+                if h.url not in seen:
+                    seen.add(h.url)
+                    pool.append(h)
+        if not pool and failing:
+            # Tell the agent why, instead of an empty list it cannot act on.
+            raise RuntimeError(f"no results; upstream engines failing: {', '.join(sorted(failing))}")
+        return pool
 
     def _semantic_scores(self, query: str, hits: list[Hit]) -> list[float] | None:
         if not hits or self._embed is None:
@@ -96,37 +92,19 @@ class SearXNGSearch:
             return None
 
     def _search_once(
-        self,
-        query: str,
-        mode: str,
-        *,
-        limit: int,
-        categories: str | None = None,
-        engines: str | None = None,
-    ) -> list[Hit]:
+        self, query: str, mode: str, *, limit: int, engines: str | None, client: httpx.Client
+    ) -> tuple[list[Hit], list[str]]:
         cfg = get_mode(mode)
-        params: dict[str, str | int] = {
-            "q": query,
-            "format": "json",
-            "categories": categories or cfg["categories"],
-        }
-        eng = engines if engines is not None else cfg.get("engines")
-        if eng:
-            params["engines"] = eng
+        params: dict[str, str | int] = {"q": query, "format": "json", "categories": cfg["categories"]}
+        if engines:
+            params["engines"] = engines
         if cfg.get("time_range"):
             params["time_range"] = cfg["time_range"]
-
-        own = self._client is None
-        client = self._client or httpx.Client(timeout=30.0)
-        try:
-            r = client.get(f"{self._base}/search", params=params)
-            r.raise_for_status()
-            data = r.json()
-        finally:
-            if own:
-                client.close()
-
-        return self.parse_results(data, limit=limit)
+        r = client.get(f"{self._base}/search", params=params)
+        r.raise_for_status()
+        data = r.json()
+        down = [f"{name} ({reason})" for name, reason in data.get("unresponsive_engines", [])]
+        return self.parse_results(data, limit=limit), down
 
     @staticmethod
     def parse_results(data: dict, limit: int = 8) -> list[Hit]:
