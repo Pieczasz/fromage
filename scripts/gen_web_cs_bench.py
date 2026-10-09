@@ -603,10 +603,14 @@ def main() -> None:
                 "tags": [topic, "generated", tag, "templated"],
                 "difficulty": "medium",
                 "split": assign_split(cid),
-                "dup_of": None,
+                "dup_of": f"{topic}-{extra_i % len(spec['queries']):03d}",
             }
         )
         extra_i += 1
+
+    # Split by the original query, so a paraphrase never lands in test while its source is in train.
+    for c in cases:
+        c["split"] = assign_split(c["dup_of"] or c["id"])
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as f:
@@ -622,7 +626,7 @@ def main() -> None:
         "test": splits["test"],
         "train_ratio": splits["train"] / len(cases),
         "topics": dict(topics),
-        "note": "Frozen hash split on id. Tune only looking at train; report test blindly.",
+        "note": "Frozen hash split on the original query id, so paraphrases share their source split. Tune only looking at train; report test blindly.",
     }
     META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(json.dumps(meta, indent=2))

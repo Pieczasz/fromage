@@ -1,7 +1,26 @@
 {
   "seed": "fromage-web-v2",
   "count": 1000,
-  "train": 905,
-  "test": 95,
-  "topics": 16
+  "train": 906,
+  "test": 94,
+  "train_ratio": 0.906,
+  "topics": {
+    "observability": 64,
+    "embedded": 64,
+    "python": 64,
+    "javascript": 63,
+    "systems": 63,
+    "distributed": 62,
+    "databases": 62,
+    "networking": 62,
+    "security": 62,
+    "ml": 62,
+    "compilers": 62,
+    "algorithms": 62,
+    "cloud_devops": 62,
+    "graphics": 62,
+    "formal_methods": 62,
+    "hci_privacy": 62
+  },
+  "note": "Frozen hash split on the original query id, so paraphrases share their source split. Tune only looking at train; report test blindly."
 }

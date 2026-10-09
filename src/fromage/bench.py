@@ -94,20 +94,15 @@ def filter_split(cases: list[WebCase], split: str) -> list[WebCase]:
 
 
 def web_hit(hits: list, case: WebCase, k: int = 5) -> bool:
-    top = hits[:k]
-    for h in top:
-        url = h.url.lower()
-        sn = (h.snippet + " " + h.title).lower()
-        if any(sub.lower() in url for sub in case.url_substrings):
-            return True
-        if any(term.lower() in sn for term in case.snippet_terms):
-            return True
-    return False
+    """Strict: a top-k result comes from one of the case's expected hosts."""
+    return any(sub.lower() in h.url.lower() for h in hits[:k] for sub in case.url_substrings)
 
 
-def topical_hit(hits: list, case: WebCase, k: int = 5) -> bool:
-    """True if any top-k result matches topic hosts or distinctive terms."""
-    return web_hit(hits, case, k=k)
+def term_hit(hits: list, case: WebCase, k: int = 5) -> bool:
+    """Lenient: a top-k title or snippet mentions any expected term."""
+    return any(
+        term.lower() in f"{h.title} {h.snippet}".lower() for h in hits[:k] for term in case.snippet_terms
+    )
 
 
 def _rate(flags: list[bool]) -> float:
@@ -167,7 +162,7 @@ def run_web_bench(
     latencies: list[float] = []
     empty = 0
     hits_n = 0
-    topical_n = 0
+    term_n = 0
     leaks: dict[str, int] = defaultdict(int)
     misses: list[dict[str, Any]] = []
     dup_pairs: list[tuple[str, str, bool, bool]] = []
@@ -186,14 +181,13 @@ def run_web_bench(
         if not results:
             empty += 1
         ok = web_hit(results, case, k=k)
-        top = topical_hit(results, case, k=k)
         hits_n += int(ok)
-        topical_n += int(top)
+        term_n += int(term_hit(results, case, k=k))
         by_mode[case.mode].append(ok)
         by_diff[case.difficulty].append(ok)
         by_split[case.split or "unspecified"].append(ok)
         if case.topic:
-            by_topic[case.topic].append(top)
+            by_topic[case.topic].append(ok)
         for tag in case.tags or ["untagged"]:
             by_tag[tag].append(ok)
         leak = topic_leakage(results, case, topic_hosts, k=k)
@@ -220,13 +214,13 @@ def run_web_bench(
         if idx % 25 == 0 or idx == len(cases):
             print(
                 f"  progress {idx}/{len(cases)} accuracy={hits_n/idx:.3f} "
-                f"topical={topical_n/idx:.3f} empty={empty} last={dt:.2f}s",
+                f"term={term_n/idx:.3f} empty={empty} last={dt:.2f}s",
                 flush=True,
             )
         if delay_s > 0:
             time.sleep(delay_s)
 
-    # Duplicate/paraphrase stability: same topical_hit outcome as parent when both evaluated
+    # Duplicate/paraphrase stability: same web_hit outcome as parent when both evaluated
     id_ok = {c.id: web_hit(results_by_id.get(c.id, []), c, k=k) for c in cases if c.id in results_by_id}
     stable = 0
     unstable = 0
@@ -243,7 +237,7 @@ def run_web_bench(
     n = len(cases) or 1
     return {
         "accuracy": hits_n / n,
-        "topical_accuracy": topical_n / n,
+        "term_accuracy": term_n / n,
         "count": len(cases),
         "k": k,
         "latency_avg_s": sum(latencies) / len(latencies) if latencies else 0.0,
@@ -253,7 +247,7 @@ def run_web_bench(
             d: {"accuracy": _rate(v), "count": len(v)} for d, v in sorted(by_diff.items())
         },
         "by_topic": {
-            t: {"topical_accuracy": _rate(v), "count": len(v)} for t, v in sorted(by_topic.items())
+            t: {"accuracy": _rate(v), "count": len(v)} for t, v in sorted(by_topic.items())
         },
         "by_split": {s: {"accuracy": _rate(v), "count": len(v)} for s, v in sorted(by_split.items())},
         "by_tag": {t: {"accuracy": _rate(v), "count": len(v)} for t, v in sorted(by_tag.items()) if t in (
@@ -442,13 +436,11 @@ def main(argv: list[str] | None = None) -> None:
             _print_web_summary("TEST (held out)", report["web_test"])
             report["web_train"] = run_web("train")
             _print_web_summary("TRAIN", report["web_train"])
-            tr = report["web_train"]["topical_accuracy"]
-            te = report["web_test"]["topical_accuracy"]
+            tr = report["web_train"]["accuracy"]
+            te = report["web_test"]["accuracy"]
             report["web"] = {
-                "train_topical_accuracy": tr,
-                "test_topical_accuracy": te,
-                "train_accuracy": report["web_train"]["accuracy"],
-                "test_accuracy": report["web_test"]["accuracy"],
+                "train_accuracy": tr,
+                "test_accuracy": te,
                 "generalization_gap": tr - te,
                 "note": "Tune only on train; test is held out. Large positive gap => overfitting risk.",
             }
