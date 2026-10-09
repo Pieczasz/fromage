@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
+import re
 import socket
 import sqlite3
 import time
@@ -15,6 +16,8 @@ from fromage.models import Page
 _MAX_BYTES = 5_000_000
 _DEADLINE_S = 30.0
 _MAX_REDIRECTS = 5
+_CACHE_TTL_S = 24 * 3600
+_FIGURE = re.compile(r"<(/?)figure\b", re.I)
 
 
 def _validate_url(url: str) -> None:
@@ -47,18 +50,23 @@ class HttpFetcher:
     def _init_cache(self) -> None:
         with sqlite3.connect(self._cache_path) as conn:
             conn.execute(
-                "CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY, text TEXT NOT NULL)"
+                "CREATE TABLE IF NOT EXISTS page_cache "
+                "(url TEXT PRIMARY KEY, text TEXT NOT NULL, fetched_at REAL NOT NULL)"
             )
 
     def _cache_get(self, url: str) -> str | None:
         with sqlite3.connect(self._cache_path) as conn:
-            row = conn.execute("SELECT text FROM pages WHERE url = ?", (url,)).fetchone()
+            row = conn.execute(
+                "SELECT text FROM page_cache WHERE url = ? AND fetched_at > ?",
+                (url, time.time() - _CACHE_TTL_S),
+            ).fetchone()
         return row[0] if row else None
 
     def _cache_put(self, url: str, text: str) -> None:
         with sqlite3.connect(self._cache_path) as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO pages (url, text) VALUES (?, ?)", (url, text)
+                "INSERT OR REPLACE INTO page_cache (url, text, fetched_at) VALUES (?, ?, ?)",
+                (url, text, time.time()),
             )
 
     def fetch(self, url: str) -> Page:
@@ -75,8 +83,9 @@ class HttpFetcher:
             if own:
                 client.close()
 
-        text = trafilatura.extract(html, url=url) or ""
-        self._cache_put(url, text)
+        text = self.extract_html(html, url=url)
+        if text:  # never cache a failed extraction, so a retry can succeed
+            self._cache_put(url, text)
         return Page(url=url, text=text)
 
     @staticmethod
@@ -107,4 +116,6 @@ class HttpFetcher:
 
     @staticmethod
     def extract_html(html: str, url: str = "") -> str:
-        return trafilatura.extract(html, url=url) or ""
+        # Docs sites wrap code blocks in <figure>, which trafilatura discards as non-content.
+        html = _FIGURE.sub(r"<\1div", html)
+        return trafilatura.extract(html, url=url, output_format="markdown") or ""

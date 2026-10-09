@@ -73,3 +73,29 @@ def test_response_size_cap(monkeypatch, tmp_path):
     f = HttpFetcher(str(tmp_path / "c.db"), client=client)
     with pytest.raises(ValueError, match="larger than"):
         f.fetch("http://public.test/")
+
+
+def test_code_in_figure_survives_extraction():
+    html = (
+        "<html><body><article><h1>Install</h1>"
+        + "<p>Some intro text that is long enough to count as the main content of the page.</p>" * 3
+        + '<figure class="code"><pre><code>curl https://example.com/install.sh</code></pre></figure>'
+        + "</article></body></html>"
+    )
+    assert "curl https://example.com/install.sh" in HttpFetcher.extract_html(html)
+
+
+def test_failed_extraction_is_not_cached(monkeypatch, tmp_path):
+    import httpx
+
+    _public_dns(monkeypatch)
+    calls = []
+
+    def handler(req):
+        calls.append(req.url)
+        return httpx.Response(200, text="<html></html>")
+
+    f = HttpFetcher(str(tmp_path / "c.db"), client=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert f.fetch("http://public.test/").text == ""
+    f.fetch("http://public.test/")
+    assert len(calls) == 2
