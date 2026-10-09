@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import uuid
 
 from open_search.models import Chunk
 
@@ -22,40 +23,36 @@ class QdrantMemory:
         safe = _COLLECTION_SAFE.sub("_", embed_model).strip("_")[:60]
         self._collection = f"{collection_prefix}_{safe}"
         self._embed_model = embed_model
-        self._ensure_collection()
 
-    def _ensure_collection(self, dim: int | None = None) -> None:
-        qm = self._qm
-        names = {c.name for c in self._client.get_collections().collections}
-        if self._collection in names:
-            return
-        if dim is None:
-            dim = 768
-        self._client.create_collection(
-            collection_name=self._collection,
-            vectors_config=qm.VectorParams(size=dim, distance=qm.Distance.COSINE),
-        )
+    def _exists(self) -> bool:
+        return self._client.collection_exists(self._collection)
 
     @property
     def embed_model(self) -> str | None:
         return self._embed_model
 
     def clear(self) -> None:
-        if self._collection in {c.name for c in self._client.get_collections().collections}:
+        if self._exists():
             self._client.delete_collection(self._collection)
-        self._ensure_collection()
 
     def upsert(self, chunks: list[Chunk], vectors: list[list[float]]) -> None:
         if len(chunks) != len(vectors):
             raise ValueError("chunks and vectors length mismatch")
-        if vectors:
-            self._ensure_collection(dim=len(vectors[0]))
+        if not vectors:
+            return
+        if not self._exists():
+            self._client.create_collection(
+                collection_name=self._collection,
+                vectors_config=self._qm.VectorParams(
+                    size=len(vectors[0]), distance=self._qm.Distance.COSINE
+                ),
+            )
         qm = self._qm
         points = []
-        for i, (chunk, vec) in enumerate(zip(chunks, vectors)):
+        for chunk, vec in zip(chunks, vectors):
             points.append(
                 qm.PointStruct(
-                    id=abs(hash(chunk.id)) % (2**63 - 1),
+                    id=str(uuid.uuid5(uuid.NAMESPACE_URL, chunk.id)),
                     vector=vec,
                     payload={
                         "chunk_id": chunk.id,
@@ -65,15 +62,16 @@ class QdrantMemory:
                     },
                 )
             )
-        if points:
-            self._client.upsert(collection_name=self._collection, points=points)
+        self._client.upsert(collection_name=self._collection, points=points)
 
     def search(self, vector: list[float], k: int = 5) -> list[tuple[Chunk, float]]:
-        hits = self._client.search(
+        if not self._exists():
+            return []
+        hits = self._client.query_points(
             collection_name=self._collection,
-            query_vector=vector,
+            query=vector,
             limit=k,
-        )
+        ).points
         out: list[tuple[Chunk, float]] = []
         for hit in hits:
             p = hit.payload or {}

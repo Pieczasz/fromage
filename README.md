@@ -11,6 +11,8 @@ docker compose up -d --build
 
 Then ask your agent: *“search for OpenTelemetry histogram vs summary”*.
 
+All ports bind to `127.0.0.1` only; nothing is reachable from your network.
+
 MCP endpoint: **http://127.0.0.1:8765/mcp**  
 Search UI (optional): http://127.0.0.1:8888
 
@@ -42,7 +44,7 @@ Tools you get: `search`, `read`, `remember`, `recall`.
 |-----------|-------|-------------------------------------------------------|
 | `mcp`     | 8765  | Agent tools (Streamable HTTP)                         |
 | `searxng` | 8888  | Metasearch                                            |
-| `ollama`  | 11434 | Embeddings (`nomic-embed-text`, pulled on first boot) |
+| `ollama`  | none  | Embeddings (`nomic-embed-text`, pulled on first boot) |
 
 Optional vector DB:
 

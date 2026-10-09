@@ -9,15 +9,12 @@ from open_search.models import Chunk
 
 
 class FakeEmbed:
-    model_id = "fake-768"
+    model_id = "fake-bow"
+    vocab = ("apple", "banana", "zebra", "yawn")
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        out: list[list[float]] = []
-        for t in texts:
-            # deterministic 3-d vector from text hash for tests
-            h = hash(t) % 1000
-            out.append([float(h), float(h // 10), float(h // 100)])
-        return out
+        # deterministic bag-of-words vectors so "nearest" is well defined
+        return [[float(w in t.split()) for w in self.vocab] for t in texts]
 
 
 @pytest.fixture
