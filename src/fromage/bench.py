@@ -12,9 +12,9 @@ from urllib.parse import urlparse
 
 import httpx
 
-from open_search.metrics import mrr, recall_at_k
-from open_search.models import Chunk
-from open_search.ports import build_embed, build_memory, build_pipeline, build_search
+from fromage.metrics import mrr, recall_at_k
+from fromage.models import Chunk
+from fromage.ports import build_embed, build_memory, build_pipeline, build_search
 
 
 @dataclass
@@ -395,7 +395,7 @@ def _print_web_summary(label: str, report: dict[str, Any]) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    p = argparse.ArgumentParser(description="Benchmark open-search web and memory layers")
+    p = argparse.ArgumentParser(description="Benchmark fromage web and memory layers")
     p.add_argument("--web", type=Path, default=Path("bench/web.jsonl"))
     p.add_argument("--memory", type=Path, default=Path("bench/memory.jsonl"))
     p.add_argument("--out-dir", type=Path, default=Path("bench/results"))

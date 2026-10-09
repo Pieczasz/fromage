@@ -1,5 +1,5 @@
 [project]
-name = "open-search"
+name = "fromage"
 version = "0.1.0"
 description = "Local search lab: SearXNG discovery, page read, swappable vector memory, MCP tools"
 readme = "README.md"
@@ -15,7 +15,7 @@ qdrant = ["qdrant-client>=1.19"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]
-open-search-bench = "open_search.bench:main"
+fromage-bench = "fromage.bench:main"
 
 [build-system]
 requires = ["setuptools>=61"]

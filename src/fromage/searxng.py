@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import httpx
 
-from open_search.models import Hit
-from open_search.modes import get_mode
-from open_search.ports import Embed
-from open_search.rank import (
+from fromage.models import Hit
+from fromage.modes import get_mode
+from fromage.ports import Embed
+from fromage.rank import (
     engines_for_mode,
     hit_text_for_embed,
     rerank,

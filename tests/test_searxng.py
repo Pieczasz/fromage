@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from open_search.searxng import SearXNGSearch
+from fromage.searxng import SearXNGSearch
 
 FIXTURE = Path(__file__).parent / "fixtures" / "searx_results.json"
 

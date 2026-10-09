@@ -1,4 +1,4 @@
-# open-search
+# fromage
 
 Your agents can search the web. Locally. Without shipping your queries to a random cloud provider.
 
@@ -52,7 +52,7 @@ Optional vector DB:
 docker compose --profile vector up -d
 ```
 
-Then set `OPEN_SEARCH_MEMORY=qdrant` / `OPEN_SEARCH_QDRANT_URL=http://qdrant:6333` on the `mcp` service.
+Then set `FROMAGE_MEMORY=qdrant` / `FROMAGE_QDRANT_URL=http://qdrant:6333` on the `mcp` service.
 
 ---
 
@@ -64,9 +64,9 @@ pip install -e ".[dev]"
 pytest
 ```
 
-Modes live in [`modes.json`](modes.json). Ranking/search knobs are env vars on the `mcp` service (`OPEN_SEARCH_IMPROVE`, `OPEN_SEARCH_SEMANTIC_RERANK`, …).
+Modes live in [`modes.json`](modes.json). Ranking/search knobs are env vars on the `mcp` service (`FROMAGE_IMPROVE`, `FROMAGE_SEMANTIC_RERANK`, …).
 
-Benchmarks (optional): `open-search-bench --web-only --web bench/web_cs.jsonl --split test`
+Benchmarks (optional): `fromage-bench --web-only --web bench/web_cs.jsonl --split test`
 
 ---
 

@@ -32,7 +32,7 @@ DEFAULT_MODES: dict[str, ModeConfig] = {
 def load_modes(config_path: Path | None = None) -> dict[str, ModeConfig]:
     modes = {k: dict(v) for k, v in DEFAULT_MODES.items()}
     if config_path is None:
-        env_path = os.environ.get("OPEN_SEARCH_MODES_PATH")
+        env_path = os.environ.get("FROMAGE_MODES_PATH")
         config_path = Path(env_path) if env_path else Path("modes.json")
     path = config_path
     if path.is_file():

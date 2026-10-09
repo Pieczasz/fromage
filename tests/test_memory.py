@@ -4,8 +4,8 @@ import os
 
 import pytest
 
-from open_search.memory_sqlite import SQLiteMemory
-from open_search.models import Chunk
+from fromage.memory_sqlite import SQLiteMemory
+from fromage.models import Chunk
 
 
 class FakeEmbed:
@@ -36,13 +36,13 @@ def test_sqlite_recall_nearest(sqlite_mem: SQLiteMemory):
 
 
 def test_qdrant_same_nearest_if_available(tmp_path):
-    if not os.environ.get("OPEN_SEARCH_QDRANT_URL"):
-        pytest.skip("OPEN_SEARCH_QDRANT_URL not set")
-    from open_search.memory_qdrant import QdrantMemory
+    if not os.environ.get("FROMAGE_QDRANT_URL"):
+        pytest.skip("FROMAGE_QDRANT_URL not set")
+    from fromage.memory_qdrant import QdrantMemory
 
     embed = FakeEmbed()
     mem = QdrantMemory(
-        url=os.environ["OPEN_SEARCH_QDRANT_URL"],
+        url=os.environ["FROMAGE_QDRANT_URL"],
         embed_model=embed.model_id,
         collection_prefix=f"test_{tmp_path.name}",
     )

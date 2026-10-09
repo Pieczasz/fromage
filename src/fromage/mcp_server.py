@@ -7,12 +7,12 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from open_search.ports import build_pipeline
+from fromage.ports import build_pipeline
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO, format="%(levelname)s %(message)s")
-log = logging.getLogger("open_search.mcp")
+log = logging.getLogger("fromage.mcp")
 
-mcp = MCPServer("open-search")
+mcp = MCPServer("fromage")
 _pipeline = None
 
 

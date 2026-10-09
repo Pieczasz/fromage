@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE="$ROOT/compose.yaml"
-URL="${OPEN_SEARCH_MCP_URL:-http://127.0.0.1:8765/mcp}"
+URL="${FROMAGE_MCP_URL:-http://127.0.0.1:8765/mcp}"
 
 usage() {
   cat <<EOF
@@ -21,7 +21,7 @@ EOF
 
 print_all() {
   cat <<EOF
-open-search MCP: $URL
+fromage MCP: $URL
 (compose file: $COMPOSE)
 
 1) Start the stack:
@@ -44,7 +44,7 @@ write_cursor() {
   if ! cat >"$ROOT/.cursor/mcp.json" <<EOF
 {
   "mcpServers": {
-    "open-search": {
+    "fromage": {
       "url": "$URL"
     }
   }

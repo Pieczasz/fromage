@@ -1,6 +1,6 @@
 import pytest
 
-from open_search.modes import get_mode, load_modes
+from fromage.modes import get_mode, load_modes
 
 
 def test_default_modes():

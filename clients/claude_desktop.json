@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "open-search": {
+    "fromage": {
       "command": "docker",
       "args": [
         "compose",
@@ -13,14 +13,14 @@
         "-e",
         "MCP_TRANSPORT=stdio",
         "-e",
-        "OPEN_SEARCH_SEARXNG_URL=http://searxng:8080",
+        "FROMAGE_SEARXNG_URL=http://searxng:8080",
         "-e",
         "OLLAMA_HOST=http://ollama:11434",
         "--entrypoint",
         "python",
         "mcp",
         "-m",
-        "open_search.mcp_server"
+        "fromage.mcp_server"
       ]
     }
   }

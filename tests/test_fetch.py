@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from open_search.fetch import HttpFetcher, _validate_url
+from fromage.fetch import HttpFetcher, _validate_url
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample.html"
 
@@ -65,7 +65,7 @@ def test_redirect_to_private_is_blocked(monkeypatch, tmp_path):
 def test_response_size_cap(monkeypatch, tmp_path):
     import httpx
 
-    from open_search import fetch as fetch_mod
+    from fromage import fetch as fetch_mod
 
     _public_dns(monkeypatch)
     monkeypatch.setattr(fetch_mod, "_MAX_BYTES", 10)

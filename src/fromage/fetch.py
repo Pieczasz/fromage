@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import httpx
 import trafilatura
 
-from open_search.models import Page
+from fromage.models import Page
 
 _MAX_BYTES = 5_000_000
 _DEADLINE_S = 30.0
@@ -87,7 +87,7 @@ class HttpFetcher:
             with client.stream(
                 "GET",
                 url,
-                headers={"User-Agent": "open-search/0.1 (+local lab)"},
+                headers={"User-Agent": "fromage/0.1 (+local lab)"},
                 follow_redirects=False,
             ) as r:
                 if r.is_redirect:

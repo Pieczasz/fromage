@@ -1,4 +1,4 @@
-from open_search.bench import WebCase, filter_split
+from fromage.bench import WebCase, filter_split
 
 
 def test_filter_split():

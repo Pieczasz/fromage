@@ -1,11 +1,11 @@
 # Add under [mcp_servers] in ~/.codex/config.toml
 # Prefer HTTP (compose stack must be up):
 
-[mcp_servers.open-search]
+[mcp_servers.fromage]
 url = "http://127.0.0.1:8765/mcp"
 
 # Or stdio via Docker (replace COMPOSE_FILE with an absolute path to compose.yaml):
 #
-# [mcp_servers.open-search]
+# [mcp_servers.fromage]
 # command = "docker"
-# args = ["compose", "-f", "COMPOSE_FILE", "run", "--rm", "-T", "-e", "MCP_TRANSPORT=stdio", "--entrypoint", "python", "mcp", "-m", "open_search.mcp_server"]
+# args = ["compose", "-f", "COMPOSE_FILE", "run", "--rm", "-T", "-e", "MCP_TRANSPORT=stdio", "--entrypoint", "python", "mcp", "-m", "fromage.mcp_server"]

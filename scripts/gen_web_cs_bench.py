@@ -8,7 +8,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-SEED = "open-search-web-v2"
+SEED = "fromage-web-v2"
 OUT = Path("bench/web_cs.jsonl")
 META = Path("bench/web_cs_meta.json")
 

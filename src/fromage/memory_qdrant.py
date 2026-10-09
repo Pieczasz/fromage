@@ -3,20 +3,20 @@ from __future__ import annotations
 import re
 import uuid
 
-from open_search.models import Chunk
+from fromage.models import Chunk
 
 _COLLECTION_SAFE = re.compile(r"[^a-zA-Z0-9_-]+")
 
 
 class QdrantMemory:
-    def __init__(self, url: str, embed_model: str, collection_prefix: str = "open_search") -> None:
+    def __init__(self, url: str, embed_model: str, collection_prefix: str = "fromage") -> None:
         try:
             from qdrant_client import QdrantClient
             from qdrant_client.http import models as qm
         except ImportError as e:
             raise ImportError(
-                "qdrant-client is required for OPEN_SEARCH_MEMORY=qdrant; "
-                "install with: pip install open-search[qdrant]"
+                "qdrant-client is required for FROMAGE_MEMORY=qdrant; "
+                "install with: pip install fromage[qdrant]"
             ) from e
         self._qm = qm
         self._client = QdrantClient(url=url)

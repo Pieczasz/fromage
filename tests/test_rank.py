@@ -1,5 +1,5 @@
-from open_search.models import Hit
-from open_search.rank import (
+from fromage.models import Hit
+from fromage.rank import (
     engines_for_mode,
     lexical_overlap,
     rewrite_queries,

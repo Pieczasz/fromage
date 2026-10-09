@@ -1,4 +1,4 @@
-from open_search.metrics import hit_at_k, mrr, recall_at_k
+from fromage.metrics import hit_at_k, mrr, recall_at_k
 
 
 def test_hit_at_k():

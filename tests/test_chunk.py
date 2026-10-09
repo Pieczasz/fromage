@@ -1,4 +1,4 @@
-from open_search.embed_ollama import chunk_text, make_chunk_id
+from fromage.embed_ollama import chunk_text, make_chunk_id
 
 
 def test_chunk_overlap():

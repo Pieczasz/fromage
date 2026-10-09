@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from open_search.embed_ollama import chunk_text, make_chunk_id
-from open_search.models import Chunk, Hit, Page
-from open_search.ports import Embed, Fetch, Memory, Search
+from fromage.embed_ollama import chunk_text, make_chunk_id
+from fromage.models import Chunk, Hit, Page
+from fromage.ports import Embed, Fetch, Memory, Search
 
 
 class Pipeline:
@@ -63,7 +63,7 @@ class Pipeline:
         # ponytail: only SQLite exposes list-all; Qdrant reindex clears and needs URLs re-fetched
         if not hasattr(self._memory, "all_chunks"):
             raise RuntimeError("reindex from stored text is only supported for sqlite memory")
-        from open_search.memory_sqlite import SQLiteMemory
+        from fromage.memory_sqlite import SQLiteMemory
 
         if not isinstance(self._memory, SQLiteMemory):
             raise RuntimeError("reindex from stored text is only supported for sqlite memory")

@@ -5,7 +5,7 @@ import math
 import sqlite3
 from pathlib import Path
 
-from open_search.models import Chunk
+from fromage.models import Chunk
 
 
 def _cosine(a: list[float], b: list[float]) -> float:

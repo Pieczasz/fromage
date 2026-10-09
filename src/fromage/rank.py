@@ -4,7 +4,7 @@ import math
 import re
 from urllib.parse import urlparse
 
-from open_search.models import Hit
+from fromage.models import Hit
 
 # Documentation / reference hosts (not package registries).
 _DOC_HOST_SUFFIXES = (
